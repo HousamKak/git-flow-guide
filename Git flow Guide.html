@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Flow Guide</title>
+    <!-- p5.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <style>
+        /* Diagram instruction styles */
+        .diagram-instructions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 15px 0;
+        }
+        
+        .instruction-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .instruction-step .step-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #4299e1;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .instruction-step .step-text {
+            flex: 1;
+            padding-top: 2px;
+        }
+        
+        .button-ref {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9em;
+            color: white;
+        }
+        
+        .button-ref.feature { background-color: #8854d0; }
+        .button-ref.feature-complete { background-color: #9b66e0; }
+        .button-ref.release { background-color: #f7b731; color: #2d3748; }
+        .button-ref.release-complete { background-color: #f8c550; color: #2d3748; }
+        .button-ref.hotfix { background-color: #eb3b5a; }
+        .button-ref.hotfix-complete { background-color: #fc5574; }
+        .button-ref.reset { background-color: #4b6584; }
+        
+        .diagram-tip {
+            background-color: #e6f7ff;
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+        
+        /* Global styles */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        
+        /* Sidebar styles */
+        nav {
+            width: 220px;
+            background-color: #2d3748;
+            color: white;
+            padding: 1.5em 1em;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        nav h2 {
+            margin-top: 0;
+            font-size: 1.4em;
+            border-bottom: 1px solid #4a5568;
+            padding-bottom: 10px;
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        nav li {
+            margin: 0.8em 0;
+            padding: 8px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        nav li:hover {
+            background-color: #4a5568;
+        }
+        
+        nav li.active {
+            background-color: #4299e1;
+        }
+        
+        /* Content area styles */
+        #content {
+            flex: 1;
+            padding: 2em;
+            background: #f8f9fa;
+            overflow-y: auto;
+        }
+        
+        /* Section styles */
+        .section {
+            display: none;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .section h1 {
+            color: #2d3748;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #4a5568;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .section p, .section li {
+            line-height: 1.6;
+            color: #4a5568;
+        }
+        
+        /* Icons styling */
+        .concept-box-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Concept boxes styling */
+        .concept-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .concept-box {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            transition: transform 0.2s;
+        }
+        
+        .concept-box:hover {
+            transform: translateY(-3px);
+        }
+        
+        .concept-box h3 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .concept-box p {
+            margin: 10px 0 0;
+            font-size: 0.95rem;
+        }
+        
+        .concept-box.blue { border-top: 4px solid #3867d6; }
+        .concept-box.green { border-top: 4px solid #20bf6b; }
+        .concept-box.purple { border-top: 4px solid #8854d0; }
+        .concept-box.red { border-top: 4px solid #eb3b5a; }
+        .concept-box.yellow { border-top: 4px solid #f7b731; }
+        
+        /* Process steps styling */
+        .process-diagram {
+            margin: 30px 0;
+        }
+        
+        .process-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background-color: #4299e1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-content h4 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: #2d3748;
+        }
+        
+        .step-content p {
+            margin-top: 5px;
+        }
+        
+        /* Highlight box */
+        .highlight-box {
+            background-color: #ebf8ff;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 25px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .highlight-box h3 {
+            color: #2b6cb0;
+            margin-top: 0;
+        }
+        
+        /* Command table styles */
+        .command-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .command-table th {
+            background-color: #4299e1;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        .command-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .command-table tr:nth-child(even) {
+            background-color: #f2f4f6;
+        }
+        
+        .command-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .command-table code {
+            background-color: #edf2f7;
+            padding: 3px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        /* Branch visual styling */
+        .branch-visual {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .branch-column {
+            flex: 1;
+            min-width: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .branch-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .branch-main { background-color: #3867d6; }
+        .branch-develop { background-color: #20bf6b; }
+        .branch-feature { background-color: #8854d0; }
+        .branch-release { background-color: #f7b731; }
+        .branch-hotfix { background-color: #eb3b5a; }
+        
+        .branch-info {
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        /* Git flow diagram container */
+        #canvas-container {
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            background-color: white;
+            height: 400px; /* Fixed height for scrolling */
+            position: relative;
+        }
+        
+        /* Diagram controls */
+        .diagram-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .diagram-controls button {
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .diagram-controls button:hover {
+            background-color: #3867d6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Button variations */
+        .diagram-controls button#featureBtn {
+            background-color: #8854d0;
+        }
+        
+        .diagram-controls button#completeFeatureBtn {
+            background-color: #9b66e0;
+        }
+        
+        .diagram-controls button#releaseBtn {
+            background-color: #f7b731;
+            color: #2d3748;
+        }
+        
+        .diagram-controls button#completeReleaseBtn {
+            background-color: #f8c550;
+            color: #2d3748;
+        }
+        
+        .diagram-controls button#hotfixBtn {
+            background-color: #eb3b5a;
+        }
+        
+        .diagram-controls button#completeHotfixBtn {
+            background-color: #fc5574;
+        }
+        
+        .diagram-controls button#resetBtn {
+            background-color: #4b6584;
+        }
+        
+        /* Legend for diagram */
+        .diagram-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        
+        /* Info panels and boxes */
+        .info-panel {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+            line-height: 1.5;
+        }
+        
+        .tip-box {
+            background-color: #ebf8ff;
+            border-left: 4px solid #4299e1;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .tip-box h3 {
+            margin-top: 0;
+            color: #2b6cb0;
+        }
+        
+        /* JIRA integration section */
+        .jira-example {
+            background-color: #f8f4ff;
+            border-left: 4px solid #805ad5;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        /* Two-column layout for Best Practices page */
+        .panel-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel-container .info-panel {
+            flex: 1;
+            margin: 0;
+        }
+        
+        /* JIRA Git connection */
+        .jira-git-connection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .jira-box, .git-box {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            min-width: 250px;
+        }
+        
+        .jira-box h3, .git-box h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        
+        .connection-arrow {
+            width: 60px;
+            height: 2px;
+            background-color: #4a5568;
+            position: relative;
+        }
+        
+        .connection-arrow:after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -4px;
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 8px solid #4a5568;
+        }
+        
+        /* Version visual */
+        .version-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            margin: 25px 0;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .version-part {
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: white;
+            position: relative;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .version-label {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #4a5568;
+            font-weight: normal;
+        }
+        
+        .major { background-color: #eb3b5a; }
+        .minor { background-color: #f7b731; }
+        .patch { background-color: #20bf6b; }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            nav {
+                width: 100%;
+                padding: 1em;
+            }
+            
+            #content {
+                padding: 1em;
+            }
+            
+            .panel-container {
+                flex-direction: column;
+            }
+            
+            .concept-box {
+                min-width: auto;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav>
+        <h2>Git Flow Guide</h2>
+        <ul>
+            <li id="nav-intro" class="active" onclick="showSection('intro')">Introduction</li>
+            <li id="nav-basics" onclick="showSection('basics')">Git Flow Basics</li>
+            <li id="nav-diagram" onclick="showSection('diagram')">Interactive Diagram</li>
+            <li id="nav-versioning" onclick="showSection('versioning')">Semantic Versioning</li>
+            <li id="nav-jira" onclick="showSection('jira')">Using JIRA</li>
+            <li id="nav-tips" onclick="showSection('tips')">Best Practices</li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div id="content">
+        <!-- Introduction Section -->
+        <div id="intro" class="section active">
+            <h1>Introduction to Git</h1>
+            
+            <h2>What is Version Control?</h2>
+            <p>Version control is a system that records changes to files over time so that you can recall specific versions later. It allows you to revert files to a previous state, revert an entire project to a previous state, compare changes over time, see who last modified something, and more.</p>
+            
+            <h2>Key Git Concepts</h2>
+            <div class="concept-grid">
+                <div class="concept-box blue">
+                    <h3>Repository</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z" />
+                    </svg>
+                    <p>A storage location for your project, containing all files and the history of changes made to those files.</p>
+                </div>
+                
+                <div class="concept-box green">
+                    <h3>Commit</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17,12C17,14.42 15.28,16.44 13,16.9V21H11V16.9C8.72,16.44 7,14.42 7,12C7,9.58 8.72,7.56 11,7.1V3H13V7.1C15.28,7.56 17,9.58 17,12M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" />
+                    </svg>
+                    <p>A snapshot of your repository at a specific point in time, with a unique ID and message describing changes.</p>
+                </div>
+                
+                <div class="concept-box purple">
+                    <h3>Branch</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M13,14C9.64,14 8.54,15.35 8.18,16.24C9.25,16.7 10,17.76 10,19A3,3 0 0,1 7,22A3,3 0 0,1 4,19C4,17.69 4.83,16.58 6,16.17V7.83C4.83,7.42 4,6.31 4,5A3,3 0 0,1 7,2A3,3 0 0,1 10,5C10,6.31 9.17,7.42 8,7.83V13.12C8.88,12.47 10.16,12 12,12C14.67,12 15.56,10.66 15.85,9.77C14.77,9.32 14,8.25 14,7A3,3 0 0,1 17,4A3,3 0 0,1 20,7C20,8.34 19.12,9.5 17.91,9.86C17.65,11.29 16.68,14 13,14M7,18A1,1 0 0,0 6,19A1,1 0 0,0 7,20A1,1 0 0,0 8,19A1,1 0 0,0 7,18M7,4A1,1 0 0,0 6,5A1,1 0 0,0 7,6A1,1 0 0,0 8,5A1,1 0 0,0 7,4M17,6A1,1 0 0,0 16,7A1,1 0 0,0 17,8A1,1 0 0,0 18,7A1,1 0 0,0 17,6Z" />
+                    </svg>
+                    <p>A parallel version of a repository that diverges from the main working project without affecting the main codebase.</p>
+                </div>
+                
+                <div class="concept-box red">
+                    <h3>Merge</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7,3A3,3 0 0,1 10,6C10,7.29 9.19,8.39 8.04,8.81C8.58,13.21 13.08,14.93 14.25,15.09C14.67,13.95 15.76,13.15 17,13.15A3,3 0 0,1 20,16.15A3,3 0 0,1 17,19.15C15.76,19.15 14.67,18.35 14.25,17.21C12.76,17.41 7.35,19.68 7,23.15H5C5.2,19 9.3,15.91 10.82,15.09C9.1,14.15 7,11.2 7,8.81C5.81,8.39 5,7.29 5,6A3,3 0 0,1 8,3M17,15.15A1,1 0 0,0 16,16.15A1,1 0 0,0 17,17.15A1,1 0 0,0 18,16.15A1,1 0 0,0 17,15.15M8,5A1,1 0 0,0 7,6A1,1 0 0,0 8,7A1,1 0 0,0 9,6A1,1 0 0,0 8,5Z" />
+                    </svg>
+                    <p>The process of integrating changes from one branch into another, combining code from different development paths.</p>
+                </div>
+            </div>
+            
+            <div class="concept-grid">
+                <div class="concept-box yellow">
+                    <h3>Pull Request</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6,3A3,3 0 0,1 9,6C9,7.31 8.17,8.42 7,8.83V15.17C8.17,15.58 9,16.69 9,18A3,3 0 0,1 6,21A3,3 0 0,1 3,18C3,16.69 3.83,15.58 5,15.17V8.83C3.83,8.42 3,7.31 3,6A3,3 0 0,1 6,3M6,5A1,1 0 0,0 5,6A1,1 0 0,0 6,7A1,1 0 0,0 7,6A1,1 0 0,0 6,5M6,17A1,1 0 0,0 5,18A1,1 0 0,0 6,19A1,1 0 0,0 7,18A1,1 0 0,0 6,17M21,18A3,3 0 0,1 18,21A3,3 0 0,1 15,18C15,16.69 15.83,15.58 17,15.17V7.83C15.83,7.42 15,6.31 15,5A3,3 0 0,1 18,2A3,3 0 0,1 21,5C21,6.31 20.17,7.42 19,7.83V15.17C20.17,15.58 21,16.69 21,18M18,4A1,1 0 0,0 17,5A1,1 0 0,0 18,6A1,1 0 0,0 19,5A1,1 0 0,0 18,4M18,16A1,1 0 0,0 17,17A1,1 0 0,0 18,18A1,1 0 0,0 19,17A1,1 0 0,0 18,16Z" />
+                    </svg>
+                    <p>A way to propose changes from your branch to be reviewed by teammates before merging into another branch.</p>
+                </div>
+                
+                <div class="concept-box blue">
+                    <h3>Clone</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16,16H8V4H16M16,1H8A3,3 0 0,0 5,4V20A3,3 0 0,0 8,23H16A3,3 0 0,0 19,20V4A3,3 0 0,0 16,1Z" />
+                    </svg>
+                    <p>Creating a copy of a remote repository on your local machine to work with the entire project history.</p>
+                </div>
+                
+                <div class="concept-box green">
+                    <h3>Push & Pull</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z" />
+                    </svg>
+                    <p><strong>Push:</strong> Upload local changes to a remote repository.<br><strong>Pull:</strong> Fetch and integrate changes from a remote repository.</p>
+                </div>
+            </div>
+            
+            <h2>Why Git is Helpful in Development Teams</h2>
+            
+            <div class="process-diagram">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Parallel Development</h4>
+                        <p>Multiple developers can work on the same project simultaneously without overwriting each other's changes.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Organized Feature Development</h4>
+                        <p>Features can be developed in isolation and merged when ready, allowing for structured development.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Full History & Accountability</h4>
+                        <p>Every change is tracked with the author's information, creating a clear history of who changed what and when.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Safe Experimentation</h4>
+                        <p>Developers can create branches to test new ideas without risking the main codebase, encouraging innovation.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <h3>Did You Know?</h3>
+                <p>Git was created by Linus Torvalds in 2005 for development of the Linux kernel. The name "git" is British English slang for an unpleasant or stubborn person, which Linus jokingly applied to himself.</p>
+            </div>
+        </div>
+
+        <!-- Git Flow Basics Section -->
+        <div id="basics" class="section">
+            <h1>Git Flow Basics</h1>
+            
+            <h2>What is Git Flow?</h2>
+            <p>Git Flow is a branching model for Git that provides a robust framework for managing larger projects. It defines a strict branching structure designed around project releases, making parallel development more manageable.</p>
+            
+            <div class="branch-visual">
+                <div class="branch-column">
+                    <div class="branch-circle branch-main">Main</div>
+                    <div class="branch-info">Production-ready code. Every commit on main is a new production release.</div>
+                </div>
+                
+                <div class="branch-column">
+                    <div class="branch-circle branch-develop">Dev</div>
+                    <div class="branch-info">Main development branch containing latest delivered changes for the next release.</div>
+                </div>
+                
+                <div class="branch-column">
+                    <div class="branch-circle branch-feature">Feature</div>
+                    <div class="branch-info">Branches off from develop and merges back to develop. Used for new features.</div>
+                </div>
+                
+                <div class="branch-column">
+                    <div class="branch-circle branch-release">Release</div>
+                    <div class="branch-info">Branches from develop and merges to main and develop. Prepares for a release.</div>
+                </div>
+                
+                <div class="branch-column">
+                    <div class="branch-circle branch-hotfix">Hotfix</div>
+                    <div class="branch-info">Branches from main and merges to main and develop. For critical bugs in production.</div>
+                </div>
+            </div>
+            
+            <h2>Git Flow Commands</h2>
+            <p>Here are the common Git Flow commands for different operations:</p>
+            
+            <div class="panel-container">
+                <div class="info-panel">
+                    <table class="command-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Operation</th>
+                                <th>Command</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Initialize Git Flow</td>
+                                <td><code>git flow init</code></td>
+                            </tr>
+                            <tr>
+                                <td>Start a feature</td>
+                                <td><code>git flow feature start FEATURE_NAME</code></td>
+                            </tr>
+                            <tr>
+                                <td>Finish a feature</td>
+                                <td><code>git flow feature finish FEATURE_NAME</code></td>
+                            </tr>
+                            <tr>
+                                <td>Start a release</td>
+                                <td><code>git flow release start RELEASE_VERSION</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="info-panel">
+                    <table class="command-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Operation</th>
+                                <th>Command</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Finish a release</td>
+                                <td><code>git flow release finish RELEASE_VERSION</code></td>
+                            </tr>
+                            <tr>
+                                <td>Start a hotfix</td>
+                                <td><code>git flow hotfix start HOTFIX_VERSION</code></td>
+                            </tr>
+                            <tr>
+                                <td>Finish a hotfix</td>
+                                <td><code>git flow hotfix finish HOTFIX_VERSION</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <h3>Manual Git Flow</h3>
+                <p>You don't need the git-flow extension to use Git Flow. You can use standard Git commands to implement the workflow manually:</p>
+                <div class="panel-container">
+                    <div class="info-panel">
+                        <p><strong>Create feature branch:</strong></p>
+                        <code>git checkout -b feature/feature_name develop</code>
+                    </div>
+                    <div class="info-panel">
+                        <p><strong>Merge feature into develop:</strong></p>
+                        <code>git checkout develop<br>git merge --no-ff feature/feature_name</code>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Benefits of Git Flow</h2>
+            <div class="concept-grid">
+                <div class="concept-box blue">
+                    <h3>Structured Development</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3,3H21V21H3V3M7,7V5H5V7H7M7,11V9H5V11H7M7,15V13H5V15H7M7,19V17H5V19H7M9,5V7H11V5H9M9,11V9H11V11H9M9,15V13H11V15H9M9,19V17H11V19H9M13,5V7H15V5H13M13,11V9H15V11H13M13,15V13H15V15H13M13,19V17H15V19H13M17,5V7H19V5H17M17,11V9H19V11H17M17,15V13H19V15H17M17,19V17H19V19H17Z" />
+                    </svg>
+                    <p>Clear roles for different branches help organize the development process.</p>
+                </div>
+                
+                <div class="concept-box purple">
+                    <h3>Parallel Development</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17,12L12,17V14H8V10H12V7L17,12M2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2A10,10 0 0,0 2,12M4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12Z" />
+                    </svg>
+                    <p>Multiple features can be developed simultaneously by different team members.</p>
+                </div>
+                
+                <div class="concept-box yellow">
+                    <h3>Release Management</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.54,5.23C20.83,5.57 21,6 21,6.5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V6.5C3,6 3.17,5.57 3.46,5.23L4.84,3.55C5.12,3.21 5.53,3 6,3H18C18.47,3 18.88,3.21 19.15,3.55L20.54,5.23M5.12,5H18.87L17.93,4H5.93L5.12,5M12,9.5L6.5,15H10V17H14V15H17.5L12,9.5Z" />
+                    </svg>
+                    <p>Dedicated branches for releases make it easy to prepare and manage releases.</p>
+                </div>
+                
+                <div class="concept-box red">
+                    <h3>Quick Bug Fixes</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20,8L14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8M19,11H17V9H19V11M17,17V15H19V17H17M17,7V5L19,7H17M8,11.5A1.5,1.5 0 0,1 9.5,10A1.5,1.5 0 0,1 11,11.5A1.5,1.5 0 0,1 9.5,13A1.5,1.5 0 0,1 8,11.5M11.31,19L10.58,17.42C9.91,17.78 9.22,18 8.5,18C7.78,18 7.09,17.78 6.42,17.42L5.69,19H11.31M7.08,15.25C7.5,15.58 8,15.75 8.5,15.75C9,15.75 9.5,15.58 9.92,15.25L9.73,15H7.28L7.08,15.25M13,15.75V12.75H15V15.75H13M13,19V17.75H15V19H13Z" />
+                    </svg>
+                    <p>Hotfix branches allow urgent fixes without disrupting ongoing development work.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Diagram Section -->
+        <div id="diagram" class="section">
+            <h1>Interactive Git Flow Diagram</h1>
+            
+            <p>Use this interactive diagram to visualize how Git Flow works. Click the buttons below to see how different operations affect the branching structure.</p>
+            
+            <div class="diagram-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #3867d6;"></div>
+                    <span>Main</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #20bf6b;"></div>
+                    <span>Develop</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #8854d0;"></div>
+                    <span>Feature</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #eb3b5a;"></div>
+                    <span>Hotfix</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #f7b731;"></div>
+                    <span>Release</span>
+                </div>
+            </div>
+            
+            <div class="diagram-controls">
+                <button id="featureBtn">Start Feature</button>
+                <button id="completeFeatureBtn">Complete Feature</button>
+                <button id="releaseBtn">Start Release</button>
+                <button id="completeReleaseBtn">Complete Release</button>
+                <button id="hotfixBtn">Start Hotfix</button>
+                <button id="completeHotfixBtn">Complete Hotfix</button>
+                <button id="resetBtn">Reset</button>
+            </div>
+            
+            <div id="canvas-container"></div>
+            
+            <div class="info-panel" style="background-color: #f8f9fa; border-left: 4px solid #4299e1; border-radius: 0 8px 8px 0;">
+                <h3 style="color: #3867d6; margin-top: 0;">How to Use the Interactive Diagram</h3>
+                <div class="diagram-instructions">
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-text">Start by clicking <span class="button-ref feature">Start Feature</span> to see how a feature branch is created from develop.</div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-text">Click <span class="button-ref feature-complete">Complete Feature</span> to see how the feature is merged back into develop.</div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">3</div>
+                        <div class="step-text">Try <span class="button-ref release">Start Release</span> to see how a release branch is created to prepare for a release.</div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">4</div>
+                        <div class="step-text">Click <span class="button-ref release-complete">Complete Release</span> to see how the release is merged into both main and develop.</div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">5</div>
+                        <div class="step-text">Try <span class="button-ref hotfix">Start Hotfix</span> to see how a hotfix branch is created from main to fix a critical bug.</div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">6</div>
+                        <div class="step-text">Click <span class="button-ref hotfix-complete">Complete Hotfix</span> to see how the hotfix is merged into both main and develop.</div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">7</div>
+                        <div class="step-text">Click <span class="button-ref reset">Reset</span> at any time to start over.</div>
+                    </div>
+                </div>
+                <div class="diagram-tip">
+                    <svg style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;" viewBox="0 0 24 24" fill="#4299e1">
+                        <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z" />
+                    </svg>
+                    <span><strong>Tip:</strong> Hover over any commit to see more details about it, and scroll horizontally to view the entire commit history.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Using JIRA with Git Flow Section -->
+        <div id="jira" class="section">
+            <h1>Using JIRA with Git Flow</h1>
+            
+            <h2>Integrating JIRA with Git Flow</h2>
+            <p>JIRA is a powerful issue tracking and project management tool that works well with Git Flow. By linking your Git branches and commits to JIRA issues, you can create a traceable connection between your code changes and the tasks or stories they implement.</p>
+            
+            <div class="jira-git-connection">
+                <div class="jira-box">
+                    <h3>JIRA</h3>
+                    <ul>
+                        <li>Issue: <strong>PROJ-123</strong></li>
+                        <li>Summary: Implement login form</li>
+                        <li>Status: In Progress</li>
+                    </ul>
+                </div>
+                
+                <div class="connection-arrow"></div>
+                
+                <div class="git-box">
+                    <h3>Git</h3>
+                    <ul>
+                        <li><strong>Branch:</strong> feature/PROJ-123-implement-login</li>
+                        <li><strong>Commit:</strong> PROJ-123 Add login form validation</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2>Naming Conventions</h2>
+            <div class="concept-grid">
+                <div class="concept-box purple">
+                    <h3>Feature Branches</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8,12H16V14H8V12M10,16H14V18H10V16M8,8H16V10H8V8M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2Z" />
+                    </svg>
+                    <p><code>feature/PROJ-123-feature-description</code></p>
+                    <p>Includes the JIRA issue ID and a brief description.</p>
+                </div>
+                
+                <div class="concept-box yellow">
+                    <h3>Release Branches</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,2L16,6H13V13.82C14.73,14.41 16,16.06 16,18A4,4 0 0,1 12,22A4,4 0 0,1 8,18C8,16.06 9.27,14.41 11,13.82V6H8L12,2M12,16A2,2 0 0,0 10,18A2,2 0 0,0 12,20A2,2 0 0,0 14,18A2,2 0 0,0 12,16Z" />
+                    </svg>
+                    <p><code>release/1.2.0</code> or <code>release/PROJ-sprint-5</code></p>
+                    <p>Can be version-based or sprint/milestone-based.</p>
+                </div>
+                
+                <div class="concept-box red">
+                    <h3>Hotfix Branches</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16" />
+                    </svg>
+                    <p><code>hotfix/1.2.1</code> or <code>hotfix/PROJ-456-critical-bug</code></p>
+                    <p>Includes version or JIRA issue ID of the critical bug.</p>
+                </div>
+            </div>
+            
+            <h2>Commit Messages</h2>
+            <div class="highlight-box">
+                <h3>JIRA Issue References in Commits</h3>
+                <div class="panel-container">
+                    <div class="info-panel">
+                        <h4>Prefix Format</h4>
+                        <pre><code>PROJ-123 Add login form</code></pre>
+                        <p>JIRA issue ID at the beginning of the commit message.</p>
+                    </div>
+                    
+                    <div class="info-panel">
+                        <h4>Suffix Format</h4>
+                        <pre><code>Fix validation errors in registration #PROJ-123</code></pre>
+                        <p>JIRA issue ID with a hash symbol at the end.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>JIRA Issue Transitions</h2>
+            <div class="process-diagram">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Create Feature Branch</h4>
+                        <p>JIRA Status: "To Do" → "In Progress"</p>
+                        <pre><code>git checkout -b feature/PROJ-123-feature-name develop</code></pre>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Create Pull Request</h4>
+                        <p>JIRA Status: "In Progress" → "In Review"</p>
+                        <p>Reference the JIRA issue in the PR description.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Merge Feature to Develop</h4>
+                        <p>JIRA Status: "In Review" → "Done"</p>
+                        <pre><code>git flow feature finish PROJ-123-feature-name</code></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>JIRA Integrations</h2>
+            <div class="concept-grid">
+                <div class="concept-box blue">
+                    <h3>JIRA DVCS Connector</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z" />
+                    </svg>
+                    <p>Links JIRA to GitHub, Bitbucket, or GitLab repositories for seamless integration.</p>
+                </div>
+                
+                <div class="concept-box green">
+                    <h3>JIRA Automation</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8Z" />
+                    </svg>
+                    <p>Create rules to transition issues based on Git events like branch creation or PR merges.</p>
+                </div>
+                
+                <div class="concept-box purple">
+                    <h3>Smart Commits</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20,8H4V6H20M20,18H4V12H20M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z" />
+                    </svg>
+                    <p>Perform JIRA actions directly from commit messages:</p>
+                    <pre style="white-space: pre-wrap; word-break: break-word;"><code>PROJ-123 #comment Fixed bug #time 2h #resolve</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Practices Section -->
+        <div id="tips" class="section">
+            <h1>Best Practices & Tips</h1>
+            
+            <h2>Commit & Branching Best Practices</h2>
+            <div class="panel-container">
+                <div class="info-panel">
+                    <h3>Write Good Commit Messages</h3>
+                    <ul>
+                        <li>Use the imperative mood: "Add feature" not "Added feature"</li>
+                        <li>Keep the first line under 50 characters</li>
+                        <li>Add more detailed explanation after a blank line if needed</li>
+                        <li>Reference issue IDs (e.g., "PROJ-123")</li>
+                    </ul>
+                    
+                    <h3>Commit Frequently</h3>
+                    <ul>
+                        <li>Make small, focused commits that do one thing</li>
+                        <li>Commit often to make changes easier to understand and review</li>
+                        <li>Avoid "mega-commits" that change hundreds of files</li>
+                    </ul>
+                </div>
+                
+                <div class="info-panel">
+                    <h3>Keep Feature Branches Small</h3>
+                    <ul>
+                        <li>Limit the scope of feature branches to specific functionality</li>
+                        <li>Shorter-lived branches are easier to merge and have fewer conflicts</li>
+                        <li>Aim to complete a feature branch within a few days to a week</li>
+                    </ul>
+                    
+                    <h3>Update from Develop Regularly</h3>
+                    <ul>
+                        <li>Regularly merge or rebase from develop to your feature branch</li>
+                        <li>This reduces merge conflicts when completing your feature</li>
+                        <li>Command: <code>git checkout feature/my-feature && git merge develop</code></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2>Code Review & Team Workflow</h2>
+            <div class="panel-container">
+                <div class="info-panel">
+                    <h3>Pull Request Guidelines</h3>
+                    <ul>
+                        <li>Include a clear description of the changes</li>
+                        <li>Reference the JIRA issue</li>
+                        <li>Keep pull requests reasonably sized for effective review</li>
+                        <li>Add tests and ensure all tests pass</li>
+                        <li>Use checklists for common review items</li>
+                    </ul>
+                    
+                    <h3>Review Process</h3>
+                    <ul>
+                        <li>Assign at least one reviewer familiar with the code area</li>
+                        <li>Address all feedback or explain why certain suggestions weren't implemented</li>
+                        <li>Don't merge your own pull requests without review</li>
+                    </ul>
+                </div>
+                
+                <div class="info-panel">
+                    <h3>Documentation</h3>
+                    <ul>
+                        <li>Document your team's Git Flow process</li>
+                        <li>Create templates for pull requests and issues</li>
+                        <li>Keep a changelog or release notes document</li>
+                    </ul>
+                    
+                    <h3>Automation</h3>
+                    <ul>
+                        <li>Use CI/CD pipelines to automate testing on branches</li>
+                        <li>Set up branch protection rules to enforce code review</li>
+                        <li>Automate JIRA transitions based on Git events</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="tip-box">
+                <h3>When to Deviate from Git Flow</h3>
+                <p>Git Flow works well for projects with scheduled releases, but it may be too complex for some situations:</p>
+                <ul>
+                    <li>For continuous delivery workflows, consider GitHub Flow or Trunk-Based Development</li>
+                    <li>For smaller teams or projects, a simplified workflow with just main and feature branches might suffice</li>
+                    <li>Adapt the model to fit your team's specific needs</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Semantic Versioning Section -->
+        <div id="versioning" class="section">
+            <h1>Semantic Versioning</h1>
+            
+            <h2>What is Semantic Versioning?</h2>
+            <p>Semantic Versioning (SemVer) is a versioning scheme that provides meaning to version numbers. Under this scheme, version numbers and the way they change convey meaning about the underlying code and what has been modified from one version to the next.</p>
+            
+            <div class="version-visual">
+                <div class="version-part major">
+                    <div class="version-label">MAJOR</div>
+                    2
+                </div>
+                <div class="version-part minor">
+                    <div class="version-label">MINOR</div>
+                    4
+                </div>
+                <div class="version-part patch">
+                    <div class="version-label">PATCH</div>
+                    1
+                </div>
+            </div>
+            
+            <div class="concept-grid">
+                <div class="concept-box red">
+                    <h3>MAJOR</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+                    </svg>
+                    <p>Incremented when you make incompatible API changes. This signals that users will need to adapt their code.</p>
+                </div>
+                
+                <div class="concept-box yellow">
+                    <h3>MINOR</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+                    </svg>
+                    <p>Incremented when you add functionality in a backward-compatible manner. New features that don't break existing ones.</p>
+                </div>
+                
+                <div class="concept-box green">
+                    <h3>PATCH</h3>
+                    <svg class="concept-box-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19,8L15,12H18A6,6 0 0,1 12,18C11,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20A8,8 0 0,0 20,12H23L19,8M6,12A6,6 0 0,1 12,6C13,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4A8,8 0 0,0 4,12H1L5,16L9,12H6Z" />
+                    </svg>
+                    <p>Incremented when you make backward-compatible bug fixes. Improvements that don't add features but fix problems.</p>
+                </div>
+            </div>
+            
+            <h2>SemVer Examples & Implementation</h2>
+            <div class="panel-container">
+                <div class="info-panel">
+                    <h3>Common Version Changes</h3>
+                    <table class="command-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Change</th>
+                                <th>Example</th>
+                                <th>When to Use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Patch</td>
+                                <td><code>1.2.3 → 1.2.4</code></td>
+                                <td>Bug fixes</td>
+                            </tr>
+                            <tr>
+                                <td>Minor</td>
+                                <td><code>1.2.3 → 1.3.0</code></td>
+                                <td>New features</td>
+                            </tr>
+                            <tr>
+                                <td>Major</td>
+                                <td><code>1.2.3 → 2.0.0</code></td>
+                                <td>Breaking changes</td>
+                            </tr>
+                            <tr>
+                                <td>Pre-release</td>
+                                <td><code>1.2.3-alpha.1</code></td>
+                                <td>Testing versions</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="info-panel">
+                    <h3>Tag-Based Versioning in Git</h3>
+                    <p>Git tags are perfect for marking release versions:</p>
+                    <pre><code>git tag -a v1.2.3 -m "Release version 1.2.3"
+git push origin v1.2.3</code></pre>
+                    
+                    <h3>Automating Version Management</h3>
+                    <p>Several tools can help automate SemVer:</p>
+                    <ul>
+                        <li><strong>npm/yarn version</strong>: For JavaScript projects</li>
+                        <li><strong>bumpversion</strong>: A Python utility</li>
+                        <li><strong>GitVersion</strong>: Calculates versions from Git history</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2>SemVer with Git Flow</h2>
+            <div class="process-diagram">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Main Branch (v1.0.0)</h4>
+                        <p>Your stable release with a MAJOR.MINOR.PATCH version tag.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Hotfix Branch</h4>
+                        <p>Increments PATCH version (v1.0.0 → v1.0.1) for critical bug fixes in production.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Release Branch</h4>
+                        <p>Increments MINOR version (v1.0.1 → v1.1.0) for new features ready for release.</p>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Major Version Updates</h4>
+                        <p>Increments MAJOR version (v1.1.0 → v2.0.0) for API-breaking changes.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Dependency Management</h2>
+            <div class="panel-container">
+                <div class="info-panel">
+                    <h3>Version Ranges in Dependencies</h3>
+                    <table class="command-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Syntax</th>
+                                <th>Example</th>
+                                <th>Meaning</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Exact</td>
+                                <td><code>"express": "4.17.1"</code></td>
+                                <td>Exactly this version</td>
+                            </tr>
+                            <tr>
+                                <td>Caret (^)</td>
+                                <td><code>"express": "^4.17.1"</code></td>
+                                <td>4.17.1 ≤ x < 5.0.0</td>
+                            </tr>
+                            <tr>
+                                <td>Tilde (~)</td>
+                                <td><code>"express": "~4.17.1"</code></td>
+                                <td>4.17.1 ≤ x < 4.18.0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="info-panel">
+                    <h3>When to Release Version 1.0.0</h3>
+                    <p>Version 1.0.0 defines the public API. It indicates your software is:</p>
+                    <ul>
+                        <li>Ready for production use</li>
+                        <li>Has a stable API that users can depend on</li>
+                        <li>Future versions will follow SemVer guidelines</li>
+                    </ul>
+                    
+                    <h3>SemVer Rules</h3>
+                    <ul>
+                        <li>Once a version is released, its contents must not be modified</li>
+                        <li>Pre-release versions (alpha, beta) indicate instability</li>
+                        <li>Major version zero (0.y.z) is for initial development</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <h3>SemVer in Real World Projects</h3>
+                <p>Many popular projects follow SemVer with their own interpretations:</p>
+                <div class="concept-grid">
+                    <div class="concept-box blue">
+                        <h3>Linux Kernel</h3>
+                        <p>Uses a different scheme (major.minor.patch-build)</p>
+                    </div>
+                    <div class="concept-box green">
+                        <h3>Angular</h3>
+                        <p>Strictly follows SemVer with time-based major releases</p>
+                    </div>
+                    <div class="concept-box purple">
+                        <h3>React</h3>
+                        <p>Generally follows SemVer, with some flexibility during pre-1.0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Git Flow Diagram Script -->
+    <script>
+        let commits = [];
+        let branches = {};
+        let branchYPositions = {};
+        let canvas;
+        let tooltipCommit = null;
+        let currentState = 'initial';
+        let animatingCommits = [];
+        let branchInProgress = null;
+        let pendingCommits = []; // Queue for progressive commit creation
+        let currentVersion = "v0.1"; // Version tracking
+        let commitCreationSpeed = 500; // ms between commit creations
+
+        // Branch colors
+        const branchColors = {
+            main: '#3867d6',
+            develop: '#20bf6b',
+            feature: '#8854d0',
+            release: '#f7b731',
+            hotfix: '#eb3b5a'
+        };
+        
+        // Initialize everything
+        function initializeCommits() {
+            commits = [];
+            branches = {
+                main: [],
+                develop: [],
+                feature: [],
+                release: [],
+                hotfix: []
+            };
+            
+            branchYPositions = {
+                main: 100,
+                hotfix: 150,
+                release: 175, // Changed: release is now above develop
+                develop: 225, 
+                feature: 300
+            };
+            
+            pendingCommits = [];
+            currentVersion = "v0.1";
+            
+            // Create initial commit on main with version tag
+            const initialCommit = createCommit('Initial commit', 'main', 100, null, currentVersion);
+            
+            // Create develop branch from main (with delay)
+            setTimeout(() => {
+                createCommit('Create develop branch', 'develop', 180, initialCommit);
+            }, 500);
+            
+            currentState = 'initial';
+            branchInProgress = null;
+            animatingCommits = [];
+        }
+        
+        // Variables for infinite scrolling
+        let canvasWidth = 2400; // Much wider canvas for scrolling
+        let viewportWidth = 800;
+        let viewportHeight = 400;
+        let scrollPosition = 0;
+        let autoScroll = false;
+        let lastAutoScrollTime = 0; // To prevent auto-scroll from conflicting with manual scroll
+        
+        function setup() {
+            // Create and attach canvas - much wider for scrolling
+            canvas = createCanvas(canvasWidth, viewportHeight);
+            canvas.parent('canvas-container');
+            
+            // Initialize commits/branches
+            initializeCommits();
+            
+            // Button event listeners
+            document.getElementById('featureBtn').addEventListener('click', startFeature);
+            document.getElementById('completeFeatureBtn').addEventListener('click', completeFeature);
+            document.getElementById('releaseBtn').addEventListener('click', startRelease);
+            document.getElementById('completeReleaseBtn').addEventListener('click', completeRelease);
+            document.getElementById('hotfixBtn').addEventListener('click', startHotfix);
+            document.getElementById('completeHotfixBtn').addEventListener('click', completeHotfix);
+            document.getElementById('resetBtn').addEventListener('click', initializeCommits);
+            
+            // Add event listeners for scrolling
+            const container = document.getElementById('canvas-container');
+            container.addEventListener('scroll', function() {
+                scrollPosition = container.scrollLeft;
+                // Disable auto-scroll for a moment when manual scrolling happens
+                autoScroll = false;
+            });
+        }
+        
+        function draw() {
+            // Clear the canvas with a white background
+            background(255);
+            
+            // Process any pending commits
+            processPendingCommits();
+            
+            // Update current scroll position
+            const container = document.getElementById('canvas-container');
+            scrollPosition = container.scrollLeft;
+            
+            // Automatically scroll to show new commits if needed, but only if autoScroll is enabled
+            // and not too soon after manual scrolling
+            if (autoScroll && millis() - lastAutoScrollTime > 500) {
+                const latestCommitX = getLatestCommitX();
+                if (latestCommitX > scrollPosition + viewportWidth - 150) {
+                    container.scrollLeft = latestCommitX - viewportWidth + 150;
+                    scrollPosition = container.scrollLeft;
+                    lastAutoScrollTime = millis();
+                }
+                // Turn off auto-scroll after it happens once
+                autoScroll = false;
+            }
+            
+            // Draw branch lines
+            drawBranchLines();
+            
+            // Draw commits
+            drawCommits();
+            
+            // Animate newly created commits (fade-in effect)
+            updateAnimations();
+            
+            // If hovering over a commit, draw a tooltip
+            drawTooltip();
+        }
+        
+        // Helper to get the X position of the latest commit
+        function getLatestCommitX() {
+            if (commits.length === 0) return 0;
+            
+            return commits.reduce((maxX, commit) => {
+                return Math.max(maxX, commit.x);
+            }, 0);
+        }
+        
+        function processPendingCommits() {
+            if (pendingCommits.length > 0 && frameCount % 30 === 0) { // Every half second approximately
+                const pendingCommit = pendingCommits.shift();
+                const { message, branch, x, parentCommit, version } = pendingCommit;
+                createCommit(message, branch, x, parentCommit, version);
+            }
+        }
+        
+        function queueCommit(message, branch, x, parentCommit, version = null) {
+            pendingCommits.push({ message, branch, x, parentCommit, version });
+        }
+        
+        function createCommit(message, branch, x, parentCommit = null, version = null) {
+            if (!branches[branch]) {
+                console.error(`Branch "${branch}" doesn't exist in the structure.`);
+                return null;
+            }
+            
+            const commit = {
+                id: commits.length,
+                message,
+                branch,
+                x,
+                y: branchYPositions[branch],
+                parentCommit,
+                timestamp: new Date().toLocaleTimeString(),
+                alpha: 0, // for fade-in effect
+                version: version
+            };
+            
+            commits.push(commit);
+            branches[branch].push(commit);
+            animatingCommits.push(commit);
+            
+            // Enable auto-scroll when creating a new commit
+            autoScroll = true;
+            
+            // Extend canvas if needed
+            if (x > canvasWidth - 300) {
+                canvasWidth = x + 500; // Add some extra space
+                resizeCanvas(canvasWidth, viewportHeight);
+            }
+            
+            return commit;
+        }
+        
+        function drawBranchLines() {
+            strokeWeight(3);
+            noFill();
+            
+            // For each branch, draw a line across the canvas and through its commits
+            for (const branch in branches) {
+                if (branches[branch].length > 0) {
+                    stroke(branchColors[branch]);
+                    
+                    // Sort commits on this branch by x position
+                    const sortedCommits = [...branches[branch]].sort((a, b) => a.x - b.x);
+                    
+                    beginShape();
+                    vertex(70, branchYPositions[branch]); // Left anchor - moved right for branch name space
+                    for (const commit of sortedCommits) {
+                        vertex(commit.x, commit.y);
+                    }
+                    vertex(width - 50, branchYPositions[branch]); // right anchor
+                    endShape();
+                }
+            }
+            
+            // Draw branch labels
+            textSize(14);
+            textAlign(RIGHT, CENTER);
+            noStroke();
+            
+            for (const branch in branchYPositions) {
+                if (branches[branch].length > 0) {
+                    fill(branchColors[branch]);
+                    text(branch, 60, branchYPositions[branch]); // Left-aligned with space
+                }
+            }
+        }
+        
+        function drawCommits() {
+            // Draw lines from each commit to its parent
+            for (const commit of commits) {
+                if (commit.parentCommit) {
+                    stroke(200);
+                    strokeWeight(2);
+                    line(commit.parentCommit.x, commit.parentCommit.y, commit.x, commit.y);
+                }
+            }
+            
+            // Draw commit circles
+            for (const commit of commits) {
+                noStroke();
+                // Ensure alpha is a valid number between 0-255
+                const alpha = commit.alpha !== undefined ? commit.alpha : 255;
+                // Create color with alpha
+                const commitColor = color(branchColors[commit.branch]);
+                commitColor.setAlpha(alpha);
+                fill(commitColor);
+                ellipse(commit.x, commit.y, 20, 20);
+                
+                // Draw version tag if present
+                if (commit.version) {
+                    textSize(12);
+                    textAlign(CENTER, BOTTOM);
+                    fill(50, 50, 50, alpha);
+                    text(commit.version, commit.x, commit.y - 15);
+                }
+                
+                // Check mouse distance for tooltip
+                if (dist(mouseX, mouseY, commit.x, commit.y) < 10) {
+                    tooltipCommit = commit;
+                    
+                    // Outline the commit being hovered
+                    stroke(100);
+                    strokeWeight(2);
+                    noFill();
+                    ellipse(commit.x, commit.y, 24, 24);
+                }
+            }
+        }
+        
+        function updateAnimations() {
+            // Slowly increase alpha for commits that are animating
+            for (let i = animatingCommits.length - 1; i >= 0; i--) {
+                const commit = animatingCommits[i];
+                if (commit.alpha === undefined) {
+                    commit.alpha = 0;
+                }
+                commit.alpha += 8; // Slower fade-in
+                
+                if (commit.alpha >= 255) {
+                    commit.alpha = 255;
+                    animatingCommits.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawTooltip() {
+            if (tooltipCommit) {
+                // Calculate text dimensions for dynamic sizing
+                textSize(12);
+                const messageWidth = textWidth(`Message: ${tooltipCommit.message}`);
+                const branchWidth = textWidth(`Branch: ${tooltipCommit.branch}`);
+                const timeWidth = textWidth(`Time: ${tooltipCommit.timestamp}`);
+                const versionWidth = tooltipCommit.version ? textWidth(`Version: ${tooltipCommit.version}`) : 0;
+                
+                // Calculate the required tooltip width based on the longest text
+                const requiredWidth = max(messageWidth, branchWidth, timeWidth, versionWidth) + 20; // 20px padding
+                const tooltipWidth = max(180, min(requiredWidth, 250)); // Min 180px, max 250px
+                
+                const tooltipHeight = tooltipCommit.version ? 90 : 70;
+                
+                // Calculate position, ensuring the tooltip stays within visible area
+                // Adjust for scroll position
+                const container = document.getElementById('canvas-container');
+                const scrollLeft = container.scrollLeft;
+                
+                let tooltipX = tooltipCommit.x + 15;
+                let tooltipY = tooltipCommit.y - tooltipHeight / 2;
+                
+                // Adjust if tooltip would go off the right edge of the viewport
+                if (tooltipX - scrollLeft + tooltipWidth > viewportWidth) {
+                    tooltipX = tooltipCommit.x - tooltipWidth - 15;
+                }
+                
+                // Adjust if tooltip would go off the top or bottom
+                if (tooltipY < 10) {
+                    tooltipY = 10;
+                } else if (tooltipY + tooltipHeight > viewportHeight - 10) {
+                    tooltipY = viewportHeight - tooltipHeight - 10;
+                }
+                
+                // Draw tooltip background with a nicer style
+                fill(44, 62, 80, 240); // Darker blue with alpha
+                noStroke();
+                rectMode(CORNER);
+                rect(tooltipX, tooltipY, tooltipWidth, tooltipHeight, 8); // Rounded corners
+                
+                // Draw a small colored indicator based on branch
+                fill(branchColors[tooltipCommit.branch]);
+                rect(tooltipX, tooltipY, 4, tooltipHeight, 4, 0, 0, 4);
+                
+                // Draw tooltip content
+                fill(255);
+                textSize(12);
+                textAlign(LEFT, TOP);
+                
+                // Truncate long messages with ellipsis to fit tooltip width
+                const truncateText = (str, maxWidth) => {
+                    if (textWidth(str) <= maxWidth) return str;
+                    
+                    let truncated = str;
+                    while (textWidth(truncated + "...") > maxWidth && truncated.length > 0) {
+                        truncated = truncated.slice(0, -1);
+                    }
+                    return truncated + "...";
+                };
+                
+                const maxTextWidth = tooltipWidth - 24; // Account for padding
+                
+                // Draw the commit information with subtle styling
+                text(`Branch: ${tooltipCommit.branch}`, tooltipX + 14, tooltipY + 10);
+                text(`Message: ${truncateText(tooltipCommit.message, maxTextWidth - textWidth("Message: "))}`, 
+                     tooltipX + 14, tooltipY + 30);
+                text(`Time: ${tooltipCommit.timestamp}`, tooltipX + 14, tooltipY + 50);
+                
+                if (tooltipCommit.version) {
+                    // Add a version tag with special styling
+                    fill(branchColors[tooltipCommit.branch]); 
+                    noStroke();
+                    rect(tooltipX + 14, tooltipY + 70, textWidth(`Version: ${tooltipCommit.version}`) + 6, 16, 3);
+                    fill(255);
+                    text(`Version: ${tooltipCommit.version}`, tooltipX + 17, tooltipY + 70);
+                }
+                
+                // Clear after drawing so only one tooltip is shown
+                tooltipCommit = null;
+            }
+        }
+        
+        function mouseMoved() {
+            // Adjust mouse coordinates to account for scrolling
+            mouseX = mouseX + scrollPosition;
+        }
+        
+        // -------------------
+        // Feature Branch Flow
+        // -------------------
+        function startFeature() {
+            if (branchInProgress === null && currentState !== 'feature') {
+                // Find the latest develop commit
+                const latestDevelop = getLatestCommit('develop');
+                if (!latestDevelop) return;
+                
+                // Queue feature branch commits to be created progressively
+                const featureX = latestDevelop.x + 80;
+                queueCommit('Start feature branch', 'feature', featureX, latestDevelop);
+                
+                // Schedule subsequent commits to appear progressively
+                setTimeout(() => {
+                    const featureStart = getLatestCommit('feature');
+                    if (featureStart) {
+                        queueCommit('Working on feature', 'feature', featureStart.x + 60, featureStart);
+                        
+                        setTimeout(() => {
+                            const featureMiddle = getLatestCommit('feature');
+                            if (featureMiddle) {
+                                queueCommit('Finishing feature', 'feature', featureMiddle.x + 60, featureMiddle);
+                            }
+                        }, commitCreationSpeed);
+                    }
+                }, commitCreationSpeed);
+                
+                branchInProgress = 'feature';
+                currentState = 'feature';
+            }
+        }
+        
+        function completeFeature() {
+            if (branchInProgress === 'feature' && branches.feature.length > 0) {
+                // Get latest feature commit
+                const latestFeature = getLatestCommit('feature');
+                if (!latestFeature) return;
+                
+                // Merge feature into develop
+                queueCommit('Merge feature into develop', 'develop', latestFeature.x + 60, latestFeature);
+                
+                // Reset so we can do something else now
+                branchInProgress = null;
+                currentState = 'initial';
+            }
+        }
+        
+        // -------------------
+        // Release Branch Flow
+        // -------------------
+        function startRelease() {
+            if (branchInProgress === null && currentState !== 'release') {
+                // Find latest develop commit
+                const latestDevelop = getLatestCommit('develop');
+                if (!latestDevelop) return;
+                
+                queueCommit('Start release branch', 'release', latestDevelop.x + 60, latestDevelop);
+                
+                setTimeout(() => {
+                    const releaseStart = getLatestCommit('release');
+                    if (releaseStart) {
+                        queueCommit('Prepare for release', 'release', releaseStart.x + 60, releaseStart);
+                    }
+                }, commitCreationSpeed);
+                
+                branchInProgress = 'release';
+                currentState = 'release';
+            }
+        }
+        
+        function completeRelease() {
+            if (branchInProgress === 'release' && branches.release.length > 0) {
+                const latestRelease = getLatestCommit('release');
+                if (!latestRelease) return;
+                
+                // Increment version for release
+                const versionParts = currentVersion.substring(1).split('.');
+                const majorVersion = parseInt(versionParts[0]);
+                const minorVersion = parseInt(versionParts[1]);
+                
+                // Increment minor version for releases
+                currentVersion = `v${majorVersion}.${minorVersion + 1}`;
+                
+                // Merge release directly into main (tag new version)
+                queueCommit('Release ' + currentVersion, 'main', latestRelease.x + 60, latestRelease, currentVersion);
+                
+                // Also merge directly into develop
+                setTimeout(() => {
+                    queueCommit('Merge release into develop', 'develop', latestRelease.x + 60, latestRelease);
+                }, commitCreationSpeed / 2); // Shorter delay so they appear almost together
+                
+                // Reset so a new flow can start
+                branchInProgress = null;
+                currentState = 'initial';
+            }
+        }
+        
+        // -------------------
+        // Hotfix Branch Flow
+        // -------------------
+        function startHotfix() {
+            if (branchInProgress === null && currentState !== 'hotfix') {
+                // Find latest main commit
+                const latestMain = getLatestCommit('main');
+                if (!latestMain) return;
+                
+                queueCommit('Start hotfix branch', 'hotfix', latestMain.x + 60, latestMain);
+                
+                setTimeout(() => {
+                    const hotfixStart = getLatestCommit('hotfix');
+                    if (hotfixStart) {
+                        queueCommit('Fix critical bug', 'hotfix', hotfixStart.x + 60, hotfixStart);
+                    }
+                }, commitCreationSpeed);
+                
+                branchInProgress = 'hotfix';
+                currentState = 'hotfix';
+            }
+        }
+        
+        function completeHotfix() {
+            if (branchInProgress === 'hotfix' && branches.hotfix.length > 0) {
+                const latestHotfix = getLatestCommit('hotfix');
+                if (!latestHotfix) return;
+                
+                // Increment patch version for hotfix
+                const versionParts = currentVersion.substring(1).split('.');
+                const majorVersion = parseInt(versionParts[0]);
+                let minorVersion = parseInt(versionParts[1]);
+                
+                // Add patch version number for hotfixes
+                if (versionParts.length <= 2) {
+                    currentVersion = `v${majorVersion}.${minorVersion}.1`;
+                } else {
+                    const patchVersion = parseInt(versionParts[2]) + 1;
+                    currentVersion = `v${majorVersion}.${minorVersion}.${patchVersion}`;
+                }
+                
+                // Merge hotfix directly into main
+                queueCommit('Release ' + currentVersion, 'main', latestHotfix.x + 60, latestHotfix, currentVersion);
+                
+                // Also merge directly into develop
+                setTimeout(() => {
+                    queueCommit('Merge hotfix into develop', 'develop', latestHotfix.x + 60, latestHotfix);
+                }, commitCreationSpeed / 2); // Shorter delay so they appear almost together
+                
+                // Reset to allow other flows
+                branchInProgress = null;
+                currentState = 'initial';
+            }
+        }
+        
+        // Helper to get the latest commit (highest x-value) on a given branch
+        function getLatestCommit(branch) {
+            if (!branches[branch] || branches[branch].length === 0) return null;
+            return branches[branch].reduce((latest, commit) => {
+                return (commit.x > latest.x) ? commit : latest;
+            }, branches[branch][0]);
+        }
+    </script>
+
+    <!-- Navigation Script -->
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show the selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Update nav highlighting
+            const navItems = document.querySelectorAll('nav li');
+            navItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            document.getElementById('nav-' + sectionId).classList.add('active');
+            
+            // Special case for diagram section - make sure p5 is properly initialized
+            if (sectionId === 'diagram') {
+                if (typeof loop === 'function') {
+                    loop(); // Resume p5 animation if it was stopped
+                }
+            }
+        }
+    </script>
+</body>
+</html>
